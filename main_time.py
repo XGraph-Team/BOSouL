@@ -2,6 +2,7 @@
 # evaluated on different sizes of SW graphs
 
 import warnings
+import gc
 
 warnings.filterwarnings("ignore")
 
@@ -23,7 +24,9 @@ actual_time_step_size = 15
 num_iterations = 30
 num_of_sims = 50
 
-for n in [1000,2000,3000,4000,5000,6000,7000,8000,9000,10000]:
+for n in [1000,2000,3000,4000,5000]:
+    gc.collect()
+
     print('===============================================================')
     print('n = ', n)
 
@@ -62,30 +65,6 @@ for n in [1000,2000,3000,4000,5000,6000,7000,8000,9000,10000]:
         end = time.time()
         BOSouLT.append(end - start)
 
-        # for i in range(5):
-        #     start = time.time()
-        #     gpsi_ft = GPSI_ft(G, c_star, num_iterations, num_of_sims, infect_rate, candidate_size, diffusion_model,
-        #                       seed_size)
-        #     end = time.time()
-        #     times.append(end - start)
-        #     dist = node_set_distance(gpsi_ft, s_star, G)
-        #     dists.append(dist)
-        #     # print(i, ':', dist, '. ', gpsi_ft)
-        # print('time: ', s.mean(times), "+-", s.stdev(times))
-        # print('eval: ', s.mean(dists), '+-', s.stdev(dists))
-        
-        # for i in range(5):
-        #     start = time.time()
-        #     gpsi_vanilla = GPSI_vanilla(G, c_star, num_iterations, num_of_sims, infect_rate, candidate_size,
-        #                                 diffusion_model, seed_size)
-        #     end = time.time()
-        #     times.append(end - start)
-        #     dist = node_set_distance(gpsi_vanilla, s_star, G)
-        #     dists.append(dist)
-        #     # print(i, ':', dist, '. ', gpsi_vanilla)
-        # print('time: ', s.mean(times), "+-", s.stdev(times))
-        # print('eval: ', s.mean(dists), '+-', s.stdev(dists))
-
         start = time.time()
         jordan = cosasi.source_inference.multiple_source.fast_multisource_jordan_centrality(obs, G, 3).topn(1)
         end = time.time()
@@ -101,7 +80,11 @@ for n in [1000,2000,3000,4000,5000,6000,7000,8000,9000,10000]:
         end = time.time()
         NETT.append(end - start)
 
+        
+
     print('BOSouL: ', s.mean(BOSouLT), '+-', s.stdev(BOSouLT))
     print('JORDAN: ', s.mean(JORDANT), '+-', s.stdev(JORDANT))
     print('LISN: ', s.mean(LISNT), '+-', s.stdev(LISNT))
     print('NET: ', s.mean(NETT), '+-', s.stdev(NETT))
+
+    gc.collect()

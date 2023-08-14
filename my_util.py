@@ -33,10 +33,120 @@ infect_rate = 0.1
 graph_size = 1000
 candidate_size = 50
 seed_size = 3
-actual_time_step_size = 8
+actual_time_step_size = 10
 num_iterations = 50
 recovery_rate = 0.1
 
+from botorch.models.utils import fantasize as fantasize_flag, validate_input_scaling
+from gpytorch.models.exact_gp import ExactGP
+from gpytorch.means.constant_mean import ConstantMean
+from gpytorch.distributions.multivariate_normal import MultivariateNormal
+from gpytorch.kernels import RBFKernel, RFFKernel
+from typing import Any, List, NoReturn, Optional, Union
+from gpytorch.likelihoods.likelihood import Likelihood
+from gpytorch.module import Module
+from gpytorch.means.mean import Mean
+from botorch.models.transforms.input import InputTransform
+from botorch.models.transforms.outcome import Log, OutcomeTransform
+from gpytorch.likelihoods.gaussian_likelihood import GaussianLikelihood
+from gpytorch.constraints.constraints import GreaterThan
+from gpytorch.priors.torch_priors import GammaPrior
+
+def get_gaussian_likelihood_with_gamma_prior(
+    batch_shape: Optional[torch.Size] = None,
+) -> GaussianLikelihood:
+    r"""Constructs the GaussianLikelihood that is used by default by
+    several models. This uses a Gamma(1.1, 0.05) prior and constrains the
+    noise level to be greater than MIN_INFERRED_NOISE_LEVEL (=1e-4).
+    """
+    batch_shape = torch.Size() if batch_shape is None else batch_shape
+    noise_prior = GammaPrior(1.1, 0.05)
+    noise_prior_mode = (noise_prior.concentration - 1) / noise_prior.rate
+    return GaussianLikelihood(
+        noise_prior=noise_prior,
+        batch_shape=batch_shape,
+        noise_constraint=GreaterThan(
+            1e-4,
+            transform=None,
+            initial_value=noise_prior_mode,
+        ),
+    )
+
+# define a class inherited from SingleTaskGP for RBF/rff kernel
+class RBFSingleTaskGP(SingleTaskGP):
+
+    def __init__(self, train_X: torch.Tensor,
+        train_Y: torch.Tensor,
+        likelihood: Optional[Likelihood] = None,
+        covar_module: Optional[Module] = None,
+        mean_module: Optional[Mean] = None,
+        outcome_transform: Optional[OutcomeTransform] = None,
+        input_transform: Optional[InputTransform] = None,
+    ) -> None:
+        r"""
+        Args:
+            train_X: A `batch_shape x n x d` tensor of training features.
+            train_Y: A `batch_shape x n x m` tensor of training observations.
+            likelihood: A likelihood. If omitted, use a standard
+                GaussianLikelihood with inferred noise level.
+            covar_module: The module computing the covariance (Kernel) matrix.
+                If omitted, use a `RBF`.
+            mean_module: The mean function to be used. If omitted, use a
+                `ConstantMean`.
+            outcome_transform: An outcome transform that is applied to the
+                training data during instantiation and to the posterior during
+                inference (that is, the `Posterior` obtained by calling
+                `.posterior` on the model will be on the original scale).
+            input_transform: An input transform that is applied in the model's
+                forward pass.
+        """
+        with torch.no_grad():
+            transformed_X = self.transform_inputs(
+                X=train_X, input_transform=input_transform
+            )
+        if outcome_transform is not None:
+            train_Y, _ = outcome_transform(train_Y)
+        self._validate_tensor_args(X=transformed_X, Y=train_Y)
+        ignore_X_dims = getattr(self, "_ignore_X_dims_scaling_check", None)
+        validate_input_scaling(
+            train_X=transformed_X, train_Y=train_Y, ignore_X_dims=ignore_X_dims
+        )
+        self._set_dimensions(train_X=train_X, train_Y=train_Y)
+        train_X, train_Y, _ = self._transform_tensor_args(X=train_X, Y=train_Y)
+        if likelihood is None:
+            likelihood = get_gaussian_likelihood_with_gamma_prior(
+                batch_shape=self._aug_batch_shape
+            )
+        else:
+            self._is_custom_likelihood = True
+        ExactGP.__init__(
+            self, train_inputs=train_X, train_targets=train_Y, likelihood=likelihood
+        )
+        if mean_module is None:
+            mean_module = ConstantMean(batch_shape=self._aug_batch_shape)
+        self.mean_module = mean_module
+        if covar_module is None:
+            covar_module = RBFKernel()
+            self._subset_batch_dict = {
+                "likelihood.noise_covar.raw_noise": -2,
+                "mean_module.raw_constant": -1,
+                "covar_module.raw_outputscale": -1,
+                "covar_module.base_kernel.raw_lengthscale": -3,
+            }
+        self.covar_module = covar_module
+        # TODO: Allow subsetting of other covar modules
+        if outcome_transform is not None:
+            self.outcome_transform = outcome_transform
+        if input_transform is not None:
+            self.input_transform = input_transform
+        self.to(train_X)
+
+    def forward(self, x: torch.Tensor) -> MultivariateNormal:
+        if self.training:
+            x = self.transform_inputs(x)
+        mean_x = self.mean_module(x)
+        covar_x = self.covar_module(x)
+        return MultivariateNormal(mean_x, covar_x)
 
 # define a class inherited from StaticNetworkContagion
 # by Zonghan

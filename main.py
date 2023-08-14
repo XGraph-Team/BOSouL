@@ -10,6 +10,7 @@ import time
 import statistics as s
 
 print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+print(diffusion_model)
 
 ################################################
 # Global parameters
@@ -32,7 +33,7 @@ LISNT = []
 NET = []
 NETT = []
 
-for i in range(10):
+for i in range(5):
 
     s_star = create_true_source_set(G, num_of_sources=seed_size)
     contagion = Contagion(G=G, model=diffusion_model, infection_rate=infect_rate, source=s_star)
@@ -132,7 +133,7 @@ LISNT = []
 NET = []
 NETT = []
 
-for i in range(10):
+for i in range(5):
 
     s_star = create_true_source_set(G, num_of_sources=seed_size)
     contagion = Contagion(G=G, model=diffusion_model, infection_rate=infect_rate, source=s_star)
@@ -231,7 +232,7 @@ LISNT = []
 NET = []
 NETT = []
 
-for i in range(10):
+for i in range(5):
 
     s_star = create_true_source_set(G, num_of_sources=seed_size)
     contagion = Contagion(G=G, model=diffusion_model, infection_rate=infect_rate, source=s_star)
@@ -331,7 +332,7 @@ LISNT = []
 NET = []
 NETT = []
 
-for i in range(10):
+for i in range(5):
 
     s_star = create_true_source_set(G, num_of_sources=seed_size)
     contagion = Contagion(G=G, model=diffusion_model, infection_rate=infect_rate, source=s_star)
@@ -414,6 +415,7 @@ print('NET sampling')
 print('time: ', s.mean(NETT), "+-", s.stdev(NETT))
 print('eval: ', s.mean(NET), '+-', s.stdev(NET))
 
+
 print('Pubmed')
 G = PubMed()
 
@@ -430,7 +432,7 @@ LISNT = []
 NET = []
 NETT = []
 
-for i in range(10):
+for i in range(5):
 
     s_star = create_true_source_set(G, num_of_sources=seed_size)
     contagion = Contagion(G=G, model=diffusion_model, infection_rate=infect_rate, source=s_star)

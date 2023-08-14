@@ -6,7 +6,7 @@ from my_util import *
 # BOSI with singletaskGP, no modification
 ################################################
 
-def GPSI(G, c_star, num_iterations, num_of_sims, infect_rate, candidate_size, diffusion_model):
+def GPSI1(G, c_star, num_iterations, num_of_sims, infect_rate, candidate_size, diffusion_model):
     # initialize the GP model with several (c, s) pairs
     candidates = create_candidate_pool(G, c_star, candidate_size)
 
@@ -732,7 +732,7 @@ def GCNSI_fs(G, c_star, num_iterations, num_of_sims, infect_rate, candidate_size
 # 7-20
 ################################################
 
-# Gaussian Process with Fourier Transfer, sampling through clustering
+# Gaussian Process with Fourier Transfer, sampling through clustering， RBF kernel
 def GPSI_cluster_sampling(G, c_star, num_iterations, num_of_sims, infect_rate, candidate_size, diffusion_model, number_of_sources, number_of_clusters):
 
     nl = nx.normalized_laplacian_matrix(G)
@@ -779,17 +779,17 @@ def GPSI_cluster_sampling(G, c_star, num_iterations, num_of_sims, infect_rate, c
 
     for iteration in range(num_iterations):
 
-        # from each cluster, sample 5 instances, select the one with the highest acquisition function value from the samples
+        # from each cluster, sample 1 instances, select the one with the highest acquisition function value from the samples
         inputs= []
         for i in range(number_of_clusters):
-            samples = random.sample(groups[i], 5)
+            samples = random.sample(groups[i], 1)
             for sample in samples:
                 inputs.append(torch.FloatTensor(sample))
 
         inputs = torch.stack(inputs).type(torch.float)
 
     # Fit a single-output GP model to the observed data
-        model = SingleTaskGP(train_X, train_Y)
+        model = RBFSingleTaskGP(train_X, train_Y)
         mll = ExactMarginalLogLikelihood(model.likelihood, model)
         fit_gpytorch_model(mll)
 
@@ -866,18 +866,18 @@ def GPSI_vanilla(G, c_star, num_iterations, num_of_sims, infect_rate, candidate_
 
     for iteration in range(num_iterations):
         # Fit a single-output GP model to the observed data
-        model = SingleTaskGP(train_X, train_Y)
+        model = RBFSingleTaskGP(train_X, train_Y)
         mll = ExactMarginalLogLikelihood(model.likelihood, model)
         fit_gpytorch_model(mll)
 
         acq_func = ExpectedImprovement(model=model, best_f=train_Y.max())
 
         ################################################
-        # 100 random samples
+        # 20 random samples
         ################################################
         combs = []
 
-        for i in range(100):
+        for i in range(20):
             source_set = sample_from_candidate_pool(candidates, number_of_sources)
             input = []
             for item in candidates:
@@ -967,18 +967,18 @@ def GPSI_ft(G, c_star, num_iterations, num_of_sims, infect_rate, candidate_size,
 
     for iteration in range(num_iterations):
         # Fit a single-output GP model to the observed data
-        model = SingleTaskGP(train_X, train_Y)
+        model = RBFSingleTaskGP(train_X, train_Y)
         mll = ExactMarginalLogLikelihood(model.likelihood, model)
         fit_gpytorch_model(mll)
 
         acq_func = ExpectedImprovement(model=model, best_f=train_Y.max())
 
         ################################################
-        # 100 random samples
+        # 20 random samples
         ################################################
         combs = []
 
-        samples = random.sample(sets_after_fourier_transfer, 100)
+        samples = random.sample(sets_after_fourier_transfer, 20)
 
         for sample in samples:
             input = torch.FloatTensor(sample)
