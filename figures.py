@@ -91,41 +91,65 @@ plt.savefig("SI.pdf",dpi=300)
 
 
 
-
 # Time
+
 models = ['BOSouL', 'Jordan', 'LISN', 'NET']
 settings = ['1000', '2000', '3000', '4000', '5000']
 
 means = {
-    'BOSouL': [396.69,772.15,1179.77,1599.77,2018.98],
-    'Jordan': [28.10,134.85,261.57,410.85,580.86],
-    'LISN': [64.19,332.51,740.55,1290.92,1989.67],
-    'NET':  [40.42,211.22,386.23,541.71,704.72]
+    'BOSouL': [396.69, 772.15, 1179.77, 1599.77, 2018.98],
+    'Jordan': [28.10, 134.85, 261.57, 410.85, 580.86],
+    'LISN': [64.19, 332.51, 740.55, 1290.92, 1989.67],
+    'NET': [40.42, 211.22, 386.23, 541.71, 704.72]
 }
 
 stds = {
-    'BOSouL': [5.84,0.96,2.88,12.53,13.56],
-    'Jordan': [6.05,53.41,63.71,25.72,52.32],
-    'LISN': [9.20,82.19,93.23,42.43,74.27],
-    'NET':  [11.82,121.84,136.61,81.14,118.44]
+    'BOSouL': [5.84, 0.96, 2.88, 12.53, 13.56],
+    'Jordan': [6.05, 53.41, 63.71, 25.72, 52.32],
+    'LISN': [9.20, 82.19, 93.23, 42.43, 74.27],
+    'NET': [11.82, 121.84, 136.61, 81.14, 118.44]
 }
 
 colors = {
     'BOSouL': 'red',
     'Jordan': 'blue',
     'LISN': 'green',
-    'NET':  'olive'
+    'NET': 'olive'
 }
 
 # Create plot
 plt.style.use('seaborn')
 fig, ax = plt.subplots()
-ax.set_xlabel('Graph size', fontsize = 15, fontweight='bold')
-ax.set_ylabel('Runtime (in seconds)', fontsize = 15, fontweight='bold')
+ax.set_xlabel('Graph size', fontsize=15, fontweight='bold')
+ax.set_ylabel('Runtime (in seconds)', fontsize=15, fontweight='bold')
 
 for i, model in enumerate(models):
-    plt.errorbar(settings, means[model], yerr=stds[model],elinewidth=3,ecolor='black',linewidth=1, color=colors[model],label=model)
+    plt.errorbar(
+        settings,
+        means[model],
+        yerr=stds[model],
+        elinewidth=3,
+        capsize=6,  # Size of the caps at the end of error bars
+        marker='o',  # Add markers to data points
+        markersize=8,  # Size of the markers
+        markeredgecolor='black',  # Marker edge color
+        linewidth=1,
+        color=colors[model],
+        label=model
+    )
 
-ax.legend(loc=2,markerscale=0.6,facecolor=(1, 1, 1, 0.05),fontsize=18,prop=dict(weight='bold',size=13))
+ax.legend(
+    loc='upper left',
+    markerscale=0.6,
+    facecolor=(1, 1, 1, 0.05),
+    fontsize=12,
+    prop=dict(weight='bold', size=10)
+)
 
+ax.tick_params(axis='both', labelsize=12)  # Adjust tick label font size
+
+plt.title('Runtime Comparison', fontsize=18, fontweight='bold')  # Add title
+plt.grid(True, linestyle='--', alpha=0.7)  # Add grid lines
+
+plt.tight_layout()  # Improve spacing between elements
 plt.savefig("time.pdf",dpi=300)
