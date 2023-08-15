@@ -119,9 +119,10 @@ colors = {
 
 # Create plot
 plt.style.use('seaborn')
-fig, ax = plt.subplots()
+fig, ax = plt.subplots(figsize=(12, 5))
 ax.set_xlabel('Graph size', fontsize=15, fontweight='bold')
-ax.set_ylabel('Runtime (in seconds)', fontsize=15, fontweight='bold')
+ax.set_ylabel('Runtime (log scale)', fontsize=15, fontweight='bold')
+ax.set_yscale('log')  # Set y-axis to log scale
 
 for i, model in enumerate(models):
     plt.errorbar(
